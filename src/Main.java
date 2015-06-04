@@ -17,6 +17,7 @@ public class Main extends Application {
     TableColumn fileNameColumn;
     TableColumn urlColumn;
     TableColumn fileSizeColumn;
+    
     TableColumn progressColumn;
     TableColumn statusColumn;
     Button pauseResumeButton;
