@@ -64,12 +64,20 @@ public class Main extends Application {
 //                int size = uc.getContentLength();
                 String fileName = url.getFile();
                 fileName = fileName.substring(fileName.lastIndexOf('/')+1);
-                RandomAccessFile file = new RandomAccessFile("myfile3.png", "rw");
+                RandomAccessFile file = new RandomAccessFile(fileName, "rw");
                 int c;
+                int count=0;
                 InputStream stream = uc.getInputStream();
                 while((c = stream.read()) != -1) {
-                    file.write(c);
+                   {
+                       file.write(c);
+                       count++;
+                       if (count%1024==0)
+                           System.out.printf("%d\n",count);
+                   }
+                  
                 }
+                 file.close();
             }
             catch(Exception ex) {}
         });
