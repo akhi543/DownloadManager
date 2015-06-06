@@ -1,4 +1,4 @@
-import java.io.InputStream;
+import java.io.*;
 import java.io.RandomAccessFile;
 import java.net.*;
 import java.util.*;
@@ -10,6 +10,7 @@ public class Download extends Observable implements Runnable {
     private int status;
     private int downloaded;
     private int size;
+    private URL newurl=null;
     
     public static final String statuses[]={"Downloading","Error","Paused","Cancelled","Complete"};
     
@@ -19,7 +20,7 @@ public class Download extends Observable implements Runnable {
     public static final int Cancelled=3;
     public static final int Complete=4;
     
-    final int MAX_BUFFER_SIZE=1024;
+    final int MAX_BUFFER_SIZE=50*1024;
     
     Download(URL ur)
     {
@@ -87,13 +88,15 @@ public class Download extends Observable implements Runnable {
         InputStream stream=null;
         try
         {
-            HttpURLConnection con=(HttpURLConnection)url.openConnection();
-            con.setRequestProperty("Range","bytes"+downloaded+"-");
-            con.connect();
-            if (con.getResponseCode()/100!=2)
+            HttpURLConnection connect=(HttpURLConnection)url.openConnection();
+            connect.setRequestProperty("Range","bytes"+downloaded+"-");
+            connect.connect();
+            System.out.println(connect.getURL());
+            if (connect.getResponseCode()/100!=2)
             {
                 error();
             }
+            printheader(connect);
             if (size==-1)
             {
                 System.out.println("here");
@@ -101,6 +104,42 @@ public class Download extends Observable implements Runnable {
                 sizecon.setRequestMethod("HEAD");
                 sizecon.getInputStream();
                 size=sizecon.getContentLength();
+                System.out.println(connect.getResponseCode());
+                System.out.println(size);
+                stateChanged();
+            }
+            
+            HttpURLConnection con=(HttpURLConnection)url.openConnection();
+            con.setRequestProperty("Range","bytes"+downloaded+"-");
+            
+            if (size==-1)
+            {
+                newurl=connect.getURL();
+                System.out.println(String.valueOf(newurl));
+                String searchurl=String.valueOf(url);
+                
+                //System.out.println(searchurl);
+                //Crawler cr=new Crawler(newurl,searchurl);
+                
+                //if(cr.search()==1)
+                //{
+                    con.setRequestProperty("Referer",String.valueOf(newurl)); 
+                    printheader(con);
+                //}
+                
+            }
+            con.connect();
+            printheader(con);
+            if (size==-1)
+            {
+                
+                HttpURLConnection sizecon=(HttpURLConnection)url.openConnection();
+                sizecon.setRequestMethod("HEAD");
+                sizecon.setRequestProperty("Referer",String.valueOf(newurl)); 
+                sizecon.getInputStream();
+                size=sizecon.getContentLength();
+                System.out.println(connect.getResponseCode());
+                System.out.println(size);
                 stateChanged();
             }
             String filename=url.getFile();
@@ -108,6 +147,7 @@ public class Download extends Observable implements Runnable {
             file = new RandomAccessFile(filename, "rw");
             file.seek(downloaded);
             stream = con.getInputStream();
+            
             System.out.println(filename+"   "+size+"   "+downloaded+"   "+statuses[status]);
             while (status==Downloading)
             {
@@ -127,6 +167,7 @@ public class Download extends Observable implements Runnable {
                 System.out.printf("%d\n",downloaded);
                 stateChanged();
             }
+            System.out.println("here3");
             if (status==Downloading)
             {
                 status=Complete;
@@ -159,7 +200,17 @@ public class Download extends Observable implements Runnable {
     public static void main(String args[]) throws Exception
     {
         URL u=new URL("http://mp3light.net/assets/songs/393000-393999/393375-see-you-again-feat-charlie-puth--1428288074.mp3");
+        //URL u=new URL("http://hqwallbase.com/images/big/colours_of_nature-1531327.jpg");
         Download d=new Download(u);
+    }
+    
+    void printheader(HttpURLConnection conn)
+    {
+        Map<String, List<String>> map = conn.getHeaderFields();
+	for (Map.Entry<String, List<String>> entry : map.entrySet()) {
+		System.out.println("Key : " + entry.getKey() + 
+                 " ,Value : " + entry.getValue());
+        }
     }
 
 }
